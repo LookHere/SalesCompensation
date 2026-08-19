@@ -25,3 +25,8 @@ If a sales plan exactly follows the formula, every worker will be along one of t
 
 The attached code runs all calculations and charts based on a minimal data normally received in this process.
 
+
+![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/Workers.png)
+
+![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/Sales.png)
+
