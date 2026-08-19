@@ -47,10 +47,20 @@ If we see similar results over a few years, we may consider being a little more 
 Now that we know how well we predicted the quota for last time, we better estimate the next quota numbers.  We could even pass the current data into those quotas to guess at the achievement, assuming the next period had similar results to the current one.  Over time you can build a predictive model based on the quota estimates, the quota's achieved, and other factors that we find influenced the achievement (like economic metrics or new company products).
 
 
+# Data Visualization 
 
 
+We generally don't want our sales associates to spend their time performing "shadow accounting" where they calculate every commission rate themselves.  We can help avoid this behavior only only by flawlessly calculating commissions (earning trust) but also by providing easy to understand visualizations.  Taking inspiration from speedometers, we can easily express:
+- the area under the quota target: light grey
+- the area between the target and exceptional quota: dark grey
+- the area over the over exceptional: white
+- that the sales associate achieved 1.27 Million this period (slightly above target)
+- that this achievement is 0.25 Million over what they achieved last period
 
-# How the Code Works
+![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/GaugeChart.png)
+
+
+# How the Calculations Works
 
 The attached code runs all calculations and charts based on a minimal data normally received in this process.
 
