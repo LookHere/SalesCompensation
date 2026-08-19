@@ -17,3 +17,11 @@ We can draw a line from the end of the target (we identified above) to the new e
 If a sales plan exactly follows the formula, every worker will be along one of the blue dotted lines (or beyond it if they exceed the exceptional quota).  But there are often complexities.  A Spiff (Sales Performance Incentive Fund) and other tools, give bonuses to sales workers based on certain conditions.  When we plot workers (in orange) we see spiffs are moving some employees above the dotted blue line of the plan.  We may want to review this spiff structure, since it seems to be favored by both workers making almost no sales, and workers just shy of meeting their target.  Spiffs should encourage more sales, not supplement compensation for those who can not achieve their goals.
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/0Data.gif)
+
+
+
+
+# How the Code Works
+
+The attached code runs all calculations and charts based on a minimal data normally received in this process.
+
