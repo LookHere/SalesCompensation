@@ -25,8 +25,11 @@ If a sales plan exactly follows the formula, every worker will be along one of t
 
 The attached code runs all calculations and charts based on a minimal data normally received in this process.
 
+There is one file with worker data, generally pulled from the HRIS.
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/Workers.png)
+
+A second file has the sales data, generally pulled from the sales team.  Note that there is a Sale# to keep track of which sales jobs are connected.  In this example Sale# 264815 was made, then canceled by the client.  The sales worker was able to salvage part of it and a spiff was awarded to them for saving the sale (since the cancellation was not their fault).  Since these are all tracked under the same sales number, they can be combined to show the sales associate a simple high level view of their achievement (in addition to a full detailed audit).
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/Sales.png)
 
