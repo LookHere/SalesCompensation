@@ -20,6 +20,32 @@ We should review this spiff structure, since it seems to be favored by both work
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/0Data.gif)
 
+# Quota Review
+
+When looking at the number of workers across the quota achievement, we are seeing something similar to a bell curve centered near the quota target, which is what we'd expect.  What we might not expect is so many people with almost no quota achievement at all.  In this case it's due to those workers being new hires and not having enough time to generate sales.  In the next chart we'll remove anyone who was not in their job for the entire period.
+
+![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/QuotaAudit.png)
+
+After removing the new hires, there is still a concerning drop right around the target (green vertical line).  That may indicate that people who know they aren't going to make the target stop trying.  It's defiantly something worth having some conversations about.
+
+![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/RemoveNewHires.png)
+
+
+When setting up our quota, we might have had a goal of 45% of associate below the sales target, 45% between the target and the exceptional, and 10% reaching over the exceptional.  Here we break down what we numbers we expected in for our quota achievement, vs. what we saw in the data.
+
+
+| Level  | Goal | Expected  | Observed |
+| ------------- | ------------- | ------------- | ------------- |
+| Under Target  | 45%  | 84  | 78  |
+| Between Target and Exceptional  | 45%  | 84  | 94  |
+| Over Exceptional  | 10%  | 19  | 15  |
+
+
+
+If we see similar results over a few years, we may consider being a little more aggressive with our target and a slightly less aggressive with our exceptional goal.
+
+Now that we know how well we predicted the quota for last time, we better estimate the next quota numbers.  We could even pass the current data into those quotas to guess at the achievement, assuming the next period had similar results to the current one.  Over time you can build a predictive model based on the quota estimates, the quota's achieved, and other factors that we find influenced the achievement (like economic metrics or new company products).
+
 
 
 
