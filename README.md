@@ -29,7 +29,63 @@ There is one file with worker data, generally pulled from the HRIS.
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/Workers.png)
 
+With this data we can write code to:
+- generate the commission target by taking the commission percentage from the target compensation
+- identify the commission exceptional rate by using the multiplier
+- identify the base pay by subtracting the commission target from the compensation target
+- find the commission rate and commission exceptional rate by finding the slope of the change over the two periods (dotted blue lines in above charts).
+
+        #### Calculate Commission Rates from the Pay Curve #### 
+
+        # Calculate the commission target by taking the total compensation target times the commission percentage
+        Workers$CommissionTarget <- (Workers$TargetComp * Workers$CommissionPercent) / 100
+
+        # Calculate the exceptional by using the multiplying the commission by the multiplier
+        Workers$CommissionExceptionalTarget <- Workers$CommissionTarget * Workers$Multiplier
+
+        # Calculate the base pay by subtracting the commission compensation from the target compensation
+        Workers$Base <- Workers$TargetComp - Workers$CommissionTarget
+
+        # Calculate the commission rate for the ramp by dividing the commission target over the quota target
+        Workers$RateRampPercent <- (Workers$CommissionTarget - 0) / (Workers$QuotaTarget - 0) 
+
+        # Calculate the commission rate for the upside by dividing the commission pay (between target and exceptional) over the quota (between target and exceptional)
+        Workers$RateUpsidePercent <- (Workers$CommissionExceptionalTarget - Workers$CommissionTarget) / (Workers$QuotaExceptional - Workers$QuotaTarget) 
+
+
+
+
+
+
+awd
+
+        
+        # Calculate the sales made in the first step (the ramp)
+
+        Workers <- Workers %>% rowwise() %>% mutate(SalesOnRamp = min(SalesEarned, QuotaTarget)) 
+
+
+        # Calculate the commissions earned on the first step (the ramp)
+
+        Workers$CompensationFromRamp <- Workers$SalesOnRamp * Workers$RateRampPercent
+
+
+        # Calculate the earnings in the second step (the upside)
+
+        Workers <- Workers %>% rowwise() %>% mutate(SalesOnUpside = max(SalesEarned-QuotaTarget ,0))
+
+
+        # Calculate the commission on the second step (the upside)
+
+        Workers$CompensationFromUpside <- Workers$SalesOnUpside * Workers$RateUpsidePercent
+
+
+
+
 A second file has the sales data, generally pulled from the sales team.  Note that there is a Sale# to keep track of which sales jobs are connected.  In this example Sale# 264815 was made, then canceled by the client.  The sales worker was able to salvage part of it and a spiff was awarded to them for saving the sale (since the cancellation was not their fault).  Since these are all tracked under the same sales number, they can be combined to show the sales associate a simple high level view of their achievement (in addition to a full detailed audit).
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/Sales.png)
+
+
+
 
