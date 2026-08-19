@@ -14,9 +14,12 @@ We can draw a line from the end of the target (we identified above) to the new e
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/0Excep.gif)
 
-If a sales plan exactly follows the formula, every worker will be along one of the blue dotted lines (or beyond it if they exceed the exceptional quota).  But there are often complexities.  A Spiff (Sales Performance Incentive Fund) and other tools, give bonuses to sales workers based on certain conditions.  When we plot workers (in orange) we see spiffs are moving some employees above the dotted blue line of the plan.  We may want to review this spiff structure, since it seems to be favored by both workers making almost no sales, and workers just shy of meeting their target.  Spiffs should encourage more sales, not supplement compensation for those who can not achieve their goals.
+If a sales plan exactly follows the formula, every worker will be along one of the blue dotted lines (or beyond it if they exceed the exceptional quota).  But there are often complexities.  A Spiff (Sales Performance Incentive Fund) and other tools, give bonuses to sales workers based on certain conditions.  When we plot workers (in orange) we see spiffs are moving some employees above the dotted blue line of the plan.  
+
+We should review this spiff structure, since it seems to be favored by both workers making almost no sales, and workers just shy of meeting their target.  Spiffs should encourage more sales, not supplement compensation for those who can not achieve their goals.
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/0Data.gif)
+
 
 
 
@@ -25,7 +28,7 @@ If a sales plan exactly follows the formula, every worker will be along one of t
 
 The attached code runs all calculations and charts based on a minimal data normally received in this process.
 
-There is one file with worker data, generally pulled from the HRIS.
+There is one data file with worker data, generally pulled from the HRIS.
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/Workers.png)
 
@@ -53,39 +56,36 @@ With this data we can write code to:
         Workers$RateUpsidePercent <- (Workers$CommissionExceptionalTarget - Workers$CommissionTarget) / (Workers$QuotaExceptional - Workers$QuotaTarget) 
 
 
-
-
-
-
-awd
-
-        
-        # Calculate the sales made in the first step (the ramp)
-
-        Workers <- Workers %>% rowwise() %>% mutate(SalesOnRamp = min(SalesEarned, QuotaTarget)) 
-
-
-        # Calculate the commissions earned on the first step (the ramp)
-
-        Workers$CompensationFromRamp <- Workers$SalesOnRamp * Workers$RateRampPercent
-
-
-        # Calculate the earnings in the second step (the upside)
-
-        Workers <- Workers %>% rowwise() %>% mutate(SalesOnUpside = max(SalesEarned-QuotaTarget ,0))
-
-
-        # Calculate the commission on the second step (the upside)
-
-        Workers$CompensationFromUpside <- Workers$SalesOnUpside * Workers$RateUpsidePercent
-
-
-
-
-A second file has the sales data, generally pulled from the sales team.  Note that there is a Sale# to keep track of which sales jobs are connected.  In this example Sale# 264815 was made, then canceled by the client.  The sales worker was able to salvage part of it and a spiff was awarded to them for saving the sale (since the cancellation was not their fault).  Since these are all tracked under the same sales number, they can be combined to show the sales associate a simple high level view of their achievement (in addition to a full detailed audit).
+A second data file has the sales made, generally pulled from the sales team.  Note that there is a Sale# to keep track of which sales jobs are connected.  In this example Sale# 264815 was made, then canceled by the client.  The sales worker was able to salvage part of it and a spiff was awarded to them for saving the sale (since the cancellation was not their fault).  Since these are all tracked under the same sales number, they can be combined to show the sales associate a simple high level view of their achievement (in addition to a full detailed audit).
 
 ![](https://github.com/LookHere/SalesCompensation/blob/main/graphics/Sales.png)
 
+We can write some code to connect the sales to each worker
+
+        # Create a dataframe just for quota achieved for each worker
+        SalesByWorker <- Sales |>
+         filter(Type == "Commission") |>
+         group_by(WorkerID) |>
+         summarise(SalesEarned = sum(Amount)) 
+
+        # Connect the commissions to each worker
+        Workers <- left_join(Workers, SalesByWorker, by = "WorkerID")
 
 
+And then we can translate the sales into earnings by multiplying them with the relevant commission rate.
+        
+        ##### Translate quota achievement into commissions ##### 
+        
+        # Calculate the sales made in the first step (the ramp)
+        Workers <- Workers %>% rowwise() %>% mutate(SalesOnRamp = min(SalesEarned, QuotaTarget)) 
+        
+        # Calculate the commissions earned on the first step (the ramp)
+        Workers$CompensationFromRamp <- Workers$SalesOnRamp * Workers$RateRampPercent
+        
+        # Calculate the earnings in the second step (the upside)
+        Workers <- Workers %>% rowwise() %>% mutate(SalesOnUpside = max(SalesEarned-QuotaTarget ,0))
+        
+        # Calculate the commission on the second step (the upside)
+        Workers$CompensationFromUpside <- Workers$SalesOnUpside * Workers$RateUpsidePercent
 
+Combining the commission with the spiff, base pay, etc. gives the Payroll team the data they need to pay each worker.
