@@ -1,6 +1,6 @@
 # Sales Compensation
 
-Incentivizing sales employees is challenging, due to the complexity of many sales plans, ever-changing jargon, and a lack of transparency.  With this code I demonstrate how to automate the commission process and analyze the results.
+Incentivizing sales employees is challenging, due to the complexity of many sales plans, ever-changing jargon, and a lack of transparency.  With [this code](https://github.com/LookHere/SalesCompensation/blob/main/ControlerSoftware/ControlerCode) I demonstrate how to automate the commission process and analyze the results.
 
 ## Calculating Commission Rates
 
@@ -64,7 +64,7 @@ We generally don't want our sales associates to spend their time performing "sha
 
 ## How the Calculations Work
 
-The attached code runs all calculations and charts based on the minimal data normally received in this process.
+The [attached code](https://github.com/LookHere/SalesCompensation/blob/main/ControlerSoftware/ControlerCode) runs all calculations and charts based on the minimal data normally received in this process.
 
 There is one data file with worker data, generally pulled from the HRIS.
 
