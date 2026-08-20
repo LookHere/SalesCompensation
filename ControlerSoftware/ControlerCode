@@ -1,0 +1,294 @@
+#### Packages ####
+
+if(!requireNamespace("readODS", quietly = TRUE)) {install.packages("readODS")}
+library(readODS)
+
+if(!requireNamespace("tidyverse", quietly = TRUE)) {install.packages("tidyverse")}
+library(tidyverse)
+
+if(!requireNamespace("ggthemes", quietly = TRUE)) {install.packages("ggthemes")}
+library(ggthemes)
+
+#### Working Directory ####
+
+# Identify the working directory to the home folder based on the OS
+#getwd()
+if (Sys.info()["sysname"] == "Windows") {
+  WorkingDirectory <- "E:/SalesComp"
+} else {
+  WorkingDirectory <- "/home/XXXXXXX/Desktop/SalesComp"
+}
+
+# Set the working directory
+setwd(WorkingDirectory)
+
+
+#### Load Files and Clean-up Data ####
+
+# Bring in the ods files
+Workers  <- read_ods("SalesCompProgramSpecsv02.ods", sheet = "DummyWorkers")
+Sales  <- read_ods("SalesCompProgramSpecsv02.ods", sheet = "DummySales")
+
+# Clean up the dates and Identify the month of the sale
+Sales$Date <- strptime(as.character(Sales$Date), "%m/%d/%Y")
+Sales$Month <- format(Sales$Date, "%m")
+
+#### Calculate Commission Rates from the Pay Curve #### 
+
+# Calculate the commission target by taking the total compensation target times the commission percentage
+Workers$CommissionTarget <- (Workers$TargetComp * Workers$CommissionPercent) / 100
+
+# Calculate the exceptional with the commission times the multiplier
+Workers$CommissionExceptionalTarget <- Workers$CommissionTarget * Workers$Multiplier
+
+# Calculate the base pay by subtracting the commission compensation from the target compensation
+Workers$Base <- Workers$TargetComp - Workers$CommissionTarget
+
+# Calculate the commission rate for the ramp by dividing the commission target over the quota target
+Workers$RateRampPercent <- (Workers$CommissionTarget - 0) / (Workers$QuotaTarget - 0) 
+
+# Calculate the commission rate for the upside by dividing the commission pay (between target and exceptional) over the quota (between target and exceptional)
+Workers$RateUpsidePercent <- (Workers$CommissionExceptionalTarget - Workers$CommissionTarget) / (Workers$QuotaExceptional - Workers$QuotaTarget)  
+
+
+#### Generating Commissions from Quotas ####
+
+##### Bring Sales to each worker #####
+
+# Create a dataframe just for quota achieved for each worker
+SalesByWorker <- Sales |>
+  filter(Type == "Commission") |>
+  group_by(WorkerID) |>
+  summarise(SalesEarned = sum(Amount)) 
+  
+
+# Connect the commissions to each worker
+Workers <- left_join(Workers, SalesByWorker, by = "WorkerID")
+
+
+##### Bring Spiff to each worker #####
+
+# Create a dataframe just for Spiff for each worker
+SpiffByWorker <- Sales |>
+  filter(Type == "Spiff") |>
+  group_by(WorkerID) |>
+  summarise(SpiffEarned = sum(Amount))
+
+# Connect the Spiff to each worker
+Workers <- left_join(Workers, SpiffByWorker, by = "WorkerID")
+
+Workers$SpiffEarned <- replace(Workers$SpiffEarned,is.na(Workers$SpiffEarned),0)
+
+
+#### Calculate commission compensation ####
+
+##### Translate quota achievement into commissions ##### 
+
+# Calculate the sales made in the first step (the ramp)
+Workers <- Workers %>% rowwise() %>% mutate(SalesOnRamp = min(SalesEarned, QuotaTarget)) 
+
+# Calculate the commissions earned on the first step (the ramp)
+Workers$CompensationFromRamp <- Workers$SalesOnRamp * Workers$RateRampPercent
+
+# Calculate the earnings in the second step (the upside)
+Workers <- Workers %>% rowwise() %>% mutate(SalesOnUpside = max(SalesEarned-QuotaTarget ,0))
+
+# Calculate the commission on the second step (the upside)
+Workers$CompensationFromUpside <- Workers$SalesOnUpside * Workers$RateUpsidePercent
+
+##### Combine compensation amounts #####
+
+# Find the Step 1 + Step 2 commissions earned
+Workers$CompensationFromCommissions <- Workers$CompensationFromRamp + Workers$CompensationFromUpside
+
+# Find the Step 1 + Step 2 + Spiff earned
+Workers$CompensationFromCommissionsAndSpiff <- Workers$CompensationFromRamp + Workers$CompensationFromUpside  + Workers$SpiffEarned
+
+# Find the Commissions, Spiff and Base Pay
+Workers$CompensationTotalCash <- Workers$CompensationFromRamp + Workers$CompensationFromUpside  + Workers$SpiffEarned + Workers$Base
+
+# Find the effective commission rate: the overall commission rate for their ramp and upside
+Workers$RateEffective <- Workers$CompensationFromCommissions / Workers$SalesEarned
+
+
+##### Calculate Commission Achievement Percentages from the Pay Curve #####
+
+Workers$AchievementCommissionPercentage <- (Workers$CompensationFromCommissions) / Workers$CommissionTarget
+
+Workers$AchievementCommissionSpiffPercentage <- (Workers$CompensationFromCommissionsAndSpiff) / Workers$CommissionTarget
+
+Workers$AchievementQuotaPercentage <- Workers$SalesEarned / Workers$QuotaTarget 
+
+
+
+
+#### Plot the Commissions Earned vs. Quota ####
+
+CommissionByQuotaGrouping <- Workers |>
+  filter(JobTitle == "Sales Associate") 
+
+
+png("0ramp.png", units="in", width=6, height=4, res=600)
+
+ggplot(
+  data = CommissionByQuotaGrouping,
+  mapping = aes(x = SalesEarned, y = CompensationFromCommissionsAndSpiff, color = JobTitle)
+) +
+  geom_point(size = .75, alpha = 0.40) +
+  scale_x_continuous(labels = scales::label_number())  +
+  scale_y_continuous(labels = scales::label_number())  +
+  theme_economist(base_size = 14) +
+  theme(axis.text.x = element_text(vjust = +2))  +
+  theme(axis.text.y = element_text(hjust = +1.2))  +
+  theme(legend.position="none") +
+  labs(x = "Quota Achieved",
+       y = "Commissions Paid",
+       color = " ",
+       title = "Commissions by Quota",
+       caption = "by John Kelly")  +
+# #  geom_abline(intercept = 0, slope = .044991, color = "blue", linewidth = .5, linetype = "dotted")
+  # First Ramp
+   geom_segment(
+    x = 0, y = 0, xend = 1000200, yend = 45000,
+    color = "blue", linewidth = .4,  linetype = "dotted"
+ ) +
+  # Second Ramp
+   geom_segment(
+    x = 1000200, y = 45000, xend = 2100420, yend = 135000,
+    color = "blue", linewidth = .4,  linetype = "dotted"
+  ) +
+
+  # Compensation Target
+  geom_segment(
+    x = 0, y = 45000, xend = 1000200, yend = 45000,
+    color = "grey", linewidth = .5
+  )  +
+  #Commission Label
+  annotate("text", x = 500000, y = 55000, label = "Commission Target") +
+  # Quota Target
+  geom_segment(
+    x = 1000200, y = 0, xend = 1000200, yend = 45000,
+    color = "grey", linewidth = .5
+  ) +
+  #Quota Label
+  annotate("text", x = 1380000, y = 25000, label = "Quota Target") +
+
+  # Compensation 3x Target
+  geom_segment(
+    x = 0, y = 135000, xend = 2100420, yend = 135000,
+    color = "grey", linewidth = .5
+  )  + 
+  #Commission 3x Label
+  annotate("text", x = 400000, y = 145000, label = "Commission 3x") + 
+  # Quota Exceptional Target
+  geom_segment(
+    x = 2100420, y = 0, xend = 2100420, yend = 135000,
+    color = "grey", linewidth = .5
+  ) +
+  #Quota Exceptional Label
+  annotate("text", x = 2630000, y = 75000, label = "Quota Exceptional ")
+
+
+dev.off()
+
+# This website showed me how to create manual lines on the graph https://www.datanovia.com/learn/data-visualization/ggplot2/add-lines
+
+#### Quota Audit ####
+
+png("QuotaAudit.png", units="in", width=6, height=4, res=600)
+
+ggplot(
+  data = CommissionByQuotaGrouping,
+  mapping = aes(x = SalesEarned, color = JobTitle)
+) +
+  geom_histogram(bins = 25, fill = "white") +
+  theme_economist(base_size = 14) +
+  scale_x_continuous(labels = scales::label_number())  +
+  theme(axis.text.x = element_text(vjust = +2))  +
+  theme(axis.text.y = element_text(hjust = +1.2))  +
+  theme(legend.position="none") +
+  labs(x = "Sales",
+       y = "Number of workers",
+       color = " ",
+       title = "Quota Review (Full Population)",
+       caption = "by John Kelly")  +
+  geom_vline(xintercept = 1000200.00,  color = "green") +
+  geom_vline(xintercept = 2100420, color = "red")
+
+dev.off()
+
+
+##### Remove New Hires #####
+
+RemoveNewHires <- CommissionByQuotaGrouping |>
+  filter(SalesEarned > 38000) 
+
+png("RemoveNewHires.png", units="in", width=6, height=4, res=600)
+
+ggplot(
+  data = RemoveNewHires,
+  mapping = aes(x = SalesEarned, color = JobTitle)
+) +
+  geom_histogram(bins = 25, fill = "white") +
+  theme_economist(base_size = 14) +
+  scale_x_continuous(labels = scales::label_number())  +
+  theme(axis.text.x = element_text(vjust = +2))  +
+  theme(axis.text.y = element_text(hjust = +1.2))  +
+  theme(legend.position="none") +
+  labs(x = "Sales",
+       y = "Number of workers",
+       color = " ",
+       title = "Quota Review (Removing New Hires)",
+       caption = "by John Kelly")  +
+  geom_vline(xintercept = 1000200.00,  color = "green") +
+  geom_vline(xintercept = 2100420, color = "red")
+
+dev.off()
+
+##### Quota Numbers #####
+
+NonNewhires <- nrow(RemoveNewHires)
+
+UnderTarget <- nrow(filter(RemoveNewHires, between(SalesEarned, 0, 1000200.00)))
+OnRamp <- nrow(filter(RemoveNewHires, between(SalesEarned, 1000200.00, 2100420))) 
+OverExcep <- nrow(filter(RemoveNewHires, between(SalesEarned, 2100420, 999888777666)))
+
+
+UnderTargetExpected <- NonNewhires * .45
+OnRampExpected <- NonNewhires * .45 
+OverExcepExpected <- NonNewhires * .10
+
+
+##### Compensation Statements #####
+
+# To help sales workers visualize their achievment, we can use a gauge chart.  
+# The light grey line is under the target, the dark grey is over the target, and the white is over exceptional
+
+
+library(plotly)
+
+WorkerGaugeChart <- Workers |>
+  filter(WorkerID == 10001)
+
+
+GaugeChart <- plot_ly(
+  domain = list(x = c(0, 1), y = c(0, 1)),
+value = WorkerGaugeChart$SalesEarned[1],
+  title = list(text = "Quota Achievement"),
+  type = "indicator",
+  mode = "gauge+number+delta",
+  delta = list(reference = WorkerGaugeChart$SalesEarned[1] - 250000),
+  gauge = list(
+    axis =list(range = list(NULL, 3000000)),
+    steps = list(
+      list(range = c(0, WorkerGaugeChart$QuotaTarget[1] ), color = "lightgray"),
+      list(range = c(WorkerGaugeChart$QuotaTarget[1], WorkerGaugeChart$QuotaExceptional[1]), color = "gray")),
+    threshold = list(
+      line = list(color = "red", width = 4),
+      thickness = 0.75,
+      value = WorkerGaugeChart$SalesEarned[1])))
+GaugeChart <- GaugeChart %>%
+  layout(margin = list(l=20,r=30))
+
+GaugeChart
+
